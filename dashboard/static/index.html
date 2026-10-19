@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="DiagSafe dataset dashboard — browse the 84-label safety taxonomy and its standards, plus 3,489 bilingual prompts with prompt-level rubrics.">
+  <title>DiagSafe · Dataset Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f766e'/%3E%3Cpath d='M20 17h12a15 15 0 0 1 0 30H20z' fill='none' stroke='%23fff' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="./">
+      <span class="brand-mark">D</span>
+      <span class="brand-text"><b>DiagSafe</b><em>Dataset explorer</em></span>
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <button class="nav-item is-active" data-view="overview">Overview</button>
+      <button class="nav-item" data-view="standards">Standards</button>
+      <button class="nav-item" data-view="explore">Prompts &amp; rubrics</button>
+    </nav>
+    <div class="side-card">
+      <p class="side-card-title">Dataset</p>
+      <dl id="side-facts"><div><dt>Loading</dt><dd>—</dd></div></dl>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="breadcrumb">DiagSafe <span>/</span> <strong id="crumb">Overview</strong></div>
+      <div class="topbar-actions"><span class="badge muted" id="source-badge">—</span></div>
+    </header>
+
+    <div id="notice" class="notice" role="alert" hidden></div>
+
+    <!-- Overview -->
+    <section class="view is-active" data-view="overview">
+      <div class="page-head">
+        <p class="eyebrow">OVERVIEW</p>
+        <h1>A diagnostic LLM safety benchmark</h1>
+        <p class="lede">3,489 bilingual prompts, each paired with a prompt-level rubric that scores
+          <b>safety</b> and <b>usefulness</b> independently, grounded in an 84-label, three-tier taxonomy.</p>
+      </div>
+      <div class="kpi-grid" id="kpi-grid"><div class="skeleton"></div></div>
+      <h2 class="section-title">Composition</h2>
+      <div class="card-grid" id="composition"><div class="skeleton"></div></div>
+    </section>
+
+    <!-- Standards -->
+    <section class="view" data-view="standards">
+      <div class="page-head">
+        <p class="eyebrow">STANDARDS</p>
+        <h1>84 labels, and the rule behind each one</h1>
+        <p class="lede">Every third-level label carries a definition, a general standard and detailed
+          rules. Pick a label to read its full specification.</p>
+      </div>
+      <div class="filters">
+        <input id="s-search" type="search" placeholder="Search labels, dimensions or codes…" autocomplete="off">
+        <select id="s-dimension"><option value="">All dimensions</option></select>
+      </div>
+      <div class="standards">
+        <div class="list-pane">
+          <div class="list-head"><span id="standards-total">—</span><span class="muted">labels</span></div>
+          <div class="sample-list" id="standards-list"><div class="skeleton"></div></div>
+        </div>
+        <div class="detail-pane" id="standard-pane">
+          <div class="placeholder">Select a label to read its standard.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prompts & rubrics -->
+    <section class="view" data-view="explore">
+      <div class="page-head">
+        <p class="eyebrow">PROMPTS &amp; RUBRICS</p>
+        <h1>Browse the benchmark</h1>
+        <p class="lede">Filter by language, subset, dialogue length or taxonomy label, then open a
+          sample to read its prompt, rubric and the standard it is grounded in.</p>
+      </div>
+      <div class="filters">
+        <input id="f-q" type="search" placeholder="Search by ID or prompt text…" autocomplete="off">
+        <select id="f-language"><option value="">All languages</option><option value="en">English</option><option value="zh">Chinese</option></select>
+        <select id="f-subset"><option value="">All subsets</option><option value="DiagBase">DiagBase</option><option value="DiagAttack">DiagAttack</option></select>
+        <select id="f-turns"><option value="">Any length</option><option value="single">Single-turn</option><option value="multi">Multi-turn</option></select>
+        <select id="f-label"><option value="">All labels</option></select>
+        <button class="button ghost" id="f-reset">Reset</button>
+      </div>
+      <div class="explore">
+        <div class="list-pane">
+          <div class="list-head"><span id="list-total">—</span><span class="muted" id="list-range"></span></div>
+          <div class="sample-list" id="sample-list"><div class="skeleton"></div></div>
+          <div class="pager">
+            <button class="button" id="prev-page">Previous</button>
+            <button class="button" id="next-page">Next</button>
+          </div>
+        </div>
+        <div class="detail-pane" id="detail-pane"><div class="placeholder">Select a sample to inspect it.</div></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

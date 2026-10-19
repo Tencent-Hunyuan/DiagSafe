@@ -1,0 +1,47 @@
+name: Deploy dashboard to Pages
+
+# Publishing is off until the repository variable PAGES_ENABLED is set to
+# 'true' (Settings -> Secrets and variables -> Actions -> Variables) and
+# Pages is enabled with Source = GitHub Actions. Until then every job is skipped.
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: vars.PAGES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dashboard dependencies
+        run: pip install -r dashboard/requirements.txt
+      - name: Export static site
+        run: python dashboard/export.py --out docs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

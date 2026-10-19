@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiagSafe Taxonomy",
+  "description": "The three-level safety taxonomy and label specifications used by DiagSafe.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "类目编号",
+      "类目名称",
+      "定义",
+      "标准总则",
+      "标准细则"
+    ],
+    "properties": {
+      "类目编号": {
+        "type": "string",
+        "pattern": "^OSS-(?:0[1-9]|1[01])$"
+      },
+      "类目名称": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "一级类目",
+          "二级类目",
+          "三级类目"
+        ],
+        "properties": {
+          "一级类目": {
+            "type": "string",
+            "minLength": 1
+          },
+          "二级类目": {
+            "type": "string",
+            "minLength": 1
+          },
+          "三级类目": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "定义": {
+        "type": "string",
+        "minLength": 1
+      },
+      "标准总则": {
+        "type": "string",
+        "minLength": 1
+      },
+      "标准细则": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

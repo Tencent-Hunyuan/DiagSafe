@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiagSafe Prompt",
+  "description": "A prompt record in the DiagSafe benchmark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "language",
+    "messages",
+    "category"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^Diag(?:Base|Attack)-[0-9]{6}$"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "zh"
+      ]
+    },
+    "messages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "const": "user"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "category": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "l1",
+        "l2",
+        "l3"
+      ],
+      "properties": {
+        "l1": {
+          "type": "string",
+          "pattern": "^OSS-(?:0[1-9]|1[01])$"
+        },
+        "l2": {
+          "type": "string",
+          "minLength": 1
+        },
+        "l3": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

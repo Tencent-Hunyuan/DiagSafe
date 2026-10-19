@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiagSafe Rubric",
+  "description": "A prompt-level rubric record in the DiagSafe benchmark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "rubric"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^Diag(?:Base|Attack)-[0-9]{6}$"
+    },
+    "rubric": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
