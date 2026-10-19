@@ -1,0 +1,22 @@
+# Configuration of the model under evaluation, served by vLLM (OpenAI-compatible).
+# Used by scripts/run_eval.py --model; --answers needs no model config.
+
+base_url: http://<host>:<port>/v1   # server address
+api_key: EMPTY                      # vLLM accepts any key by default; set the real key if auth is enabled
+model: <model-name>                 # model name returned by /v1/models
+temperature: 0
+max_tokens: 4096
+concurrency: 16                     # maximum concurrent requests
+max_retries: 5                      # attempts per request, with exponential backoff
+timeout: 120                        # request timeout in seconds
+
+# Server-specific request fields; set enable_thinking to match the
+# configuration you intend to evaluate.
+extra_body:
+  chat_template_kwargs:
+    enable_thinking: false
+
+# Optional sampling parameter and request headers:
+# top_p: 0.95
+# extra_headers:
+#   X-Request-Id: diagsafe-target

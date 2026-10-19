@@ -1,0 +1,24 @@
+# LLM-as-a-judge configuration for a vLLM OpenAI-compatible server.
+# Usage: python scripts/run_eval.py --judge configs/judge_vllm.yaml ...
+
+base_url: http://<host>:<port>/v1   # server address
+api_key: EMPTY                      # vLLM accepts any key by default; set the real key if auth is enabled
+model: <model-name>                 # model name returned by /v1/models
+temperature: 0                      # deterministic judgments
+max_tokens: 4096                    # judge outputs run to ~2,000 characters; keep at least 2048
+concurrency: 16                     # maximum concurrent requests
+max_retries: 5                      # attempts per request, with exponential backoff
+timeout: 120                        # request timeout in seconds
+
+# Server-specific request fields. Disable thinking so the reasoning trace does
+# not consume max_tokens and leave the judge output empty.
+extra_body:
+  chat_template_kwargs:
+    enable_thinking: false
+  # top_k: 50
+  # repetition_penalty: 1.05
+
+# Optional sampling parameter and request headers:
+# top_p: 0.95
+# extra_headers:
+#   X-Request-Id: diagsafe-judge

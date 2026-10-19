@@ -1,0 +1,18 @@
+# Configuration of the model under evaluation (OpenAI-compatible API).
+# Used by scripts/run_eval.py --model; --answers needs no model config.
+base_url: https://api.openai.com/v1
+api_key: YOUR_API_KEY          # API key of the endpoint
+model: your-model-name         # model under evaluation
+temperature: 0
+max_tokens: 4096
+concurrency: 16                # maximum concurrent requests
+max_retries: 5                 # attempts per request, with exponential backoff
+timeout: 120                   # request timeout in seconds
+
+# Optional request fields; the defaults below send nothing extra.
+top_p: null                    # nucleus sampling; null leaves it to the server
+extra_body: {}                 # server-specific fields, e.g. for vLLM:
+                               #   extra_body:
+                               #     chat_template_kwargs:
+                               #       enable_thinking: false
+extra_headers: {}              # extra HTTP headers, e.g. {X-Request-Id: diagsafe}
