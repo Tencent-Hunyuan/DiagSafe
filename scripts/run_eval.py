@@ -224,7 +224,8 @@ async def judge_one(
     turns are appended after the rendered prompt as a history block.
     """
     turn_prompt = {'messages': [{'role': 'user', 'content': question}],
-                   'category': prompt['category']}
+                   'category': prompt['category'],
+                   'language': prompt['language']}
     rendered = render_rubric(template, turn_prompt, answer, history=history)
     messages = [{'role': 'user', 'content': rendered}]
     last_error = ''
