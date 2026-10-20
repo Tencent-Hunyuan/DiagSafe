@@ -81,7 +81,7 @@ for prompt in prompts:
 
 | File | SHA-256 |
 |---|---|
-| `DiagSafe_bench_3489.jsonl` | `befa1cae314fc0faceed1a077e823d04b9e207a39111794e3e70e71cbd3e1733` |
+| `DiagSafe_bench_3489.jsonl` | `c43caa21d0369831a61c7f4466bb587ab6b0ef3158b23a7d331538a6094fb6ac` |
 | `DiagSafe_rubrics_3489.jsonl` | `811b71a6a864ba8245b92994a8510aa55fcad98c22124c917dec3eb3d722ad9e` |
 | `DiagSafe_standards_84.json` | `d7e66c37ee9b55b7bb984b4dfd70740908f390b3a6743dfd579a84c055bcaca4` |
-| `DiagSafe_standards_84_en.json` | `356b638bda1f9ca090f117ea9876cfbf44f486c3cd17a9508fe55144a9760204` |
+| `DiagSafe_standards_84_en.json` | `f9aa0dcf32d0aad2b90a4629372a8613dfeeb6407cf66e83bc9c108e485948ec` |

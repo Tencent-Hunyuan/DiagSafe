@@ -72,12 +72,6 @@ def subset_of(prompt_id: str) -> str:
     return prompt_id.split('-')[0]
 
 
-def split_judgment_key(key: str) -> Tuple[str, int]:
-    """Split a `<id>#<turn>` checkpoint key into prompt id and turn index."""
-    prompt_id, turn = key.rsplit('#', 1)
-    return prompt_id, int(turn)
-
-
 def history_pairs(prompt: Dict[str, Any], answers: List[str]) -> List[Dict[str, str]]:
     """Pair each answered turn with its question as [{'question', 'answer'}]."""
     return [
@@ -167,10 +161,25 @@ def is_usable_answer(checkpoint: Dict[str, Dict[str, Any]], prompt_id: str, n_tu
     return len(record.get('answers') or []) >= n_turns
 
 
-def is_usable_judgment(checkpoint: Dict[str, Dict[str, Any]], key: str) -> bool:
-    """Return True if the checkpoint holds a parsed judgment for the key."""
-    record = checkpoint.get(key)
-    return bool(record) and record.get('kind') == 'judgment' and record.get('error') is None
+def answers_digest(answers: List[str]) -> str:
+    """Return the SHA-256 of the answers a judgment depends on (the current turn and all earlier ones)."""
+    return hashlib.sha256(json.dumps(answers, ensure_ascii=False).encode('utf-8')).hexdigest()
+
+
+def is_usable_judgment(record: Any, answers: List[str], turn: int, trust_legacy: bool) -> bool:
+    """Return True if a checkpointed judgment is parsed and was made on the current answers.
+
+    A judgment records the digest of the answers up to its turn, so it is reused
+    only when those answers are unchanged. Records written before the digest was
+    introduced are trusted only when `trust_legacy` is set, i.e. when the
+    prompt's answers were not regenerated in this run.
+    """
+    if not record or record.get('kind') != 'judgment' or record.get('error') is not None:
+        return False
+    digest = record.get('answers_sha256')
+    if digest is None:
+        return trust_legacy
+    return digest == answers_digest(answers[:turn])
 
 
 def append_checkpoint(partial_path: Path, record: Dict[str, Any]) -> None:
@@ -217,11 +226,14 @@ async def judge_one(
     question: str,
     answer: str,
     history: List[Dict[str, str]],
+    answers_sha256: str,
 ) -> Dict[str, Any]:
     """Judge one turn's answer against its rubric, retrying on parse failures.
 
     The rubric's {question} placeholder receives only the current turn; earlier
-    turns are appended after the rendered prompt as a history block.
+    turns are inserted as a history block right after the safety-category tag
+    (see src/rubric/render.py). The record keeps `answers_sha256`, the digest of
+    the answers up to this turn, so a resumed run reuses it only for the same answers.
     """
     turn_prompt = {'messages': [{'role': 'user', 'content': question}],
                    'category': prompt['category'],
@@ -238,6 +250,7 @@ async def judge_one(
                 'key': key,
                 'kind': 'judgment',
                 'turn': turn,
+                'answers_sha256': answers_sha256,
                 'error': None,
                 **judgment,
             }
@@ -246,7 +259,7 @@ async def judge_one(
             return record
         except Exception as error:  # noqa: BLE001 - API or parse failure, retry
             last_error = str(error)
-    record = {'key': key, 'kind': 'judgment', 'turn': turn,
+    record = {'key': key, 'kind': 'judgment', 'turn': turn, 'answers_sha256': answers_sha256,
               'verdict': None, 'score': None, 'triggered_items': [], 'final_summary': '',
               'judge_output': None, 'error': last_error}
     async with lock:
@@ -311,11 +324,6 @@ async def run(args: argparse.Namespace) -> None:
 
     judge = ChatClient(judge_config)
     judgments: Dict[str, List[Dict[str, Any]]] = {}
-    for record in checkpoint.values():
-        if record['kind'] == 'judgment' and record['error'] is None:
-            prompt_id, __ = split_judgment_key(record['key'])
-            judgments.setdefault(prompt_id, []).append(record)
-
     judge_tasks: List[asyncio.Task] = []
     scheduled: set = set()
     judge_bar = None
@@ -325,19 +333,26 @@ async def run(args: argparse.Namespace) -> None:
         record = await judge_one(
             judge, lock, partial_path, prompt, templates[prompt['id']], turn,
             prompt['messages'][turn - 1]['content'], answers[turn - 1],
-            history_pairs(prompt, answers)[:turn - 1],
+            history_pairs(prompt, answers)[:turn - 1], answers_digest(answers[:turn]),
         )
         if record['error'] is None:
             judgments.setdefault(prompt['id'], []).append(record)
         judge_bar.update(1)
 
     def schedule_judging(prompt: Dict[str, Any]) -> None:
-        """Queue every answered turn of a prompt that still lacks a usable judgment."""
+        """Reuse the checkpointed judgments made on the current answers; queue the other answered turns."""
         if prompt['id'] in scheduled:
             return
         scheduled.add(prompt['id'])
-        turns = [t for t in range(1, len(answers_by_id.get(prompt['id'], [])) + 1)
-                 if not is_usable_judgment(checkpoint, f"{prompt['id']}#{t}")]
+        answers = answers_by_id.get(prompt['id'], [])
+        trust_legacy = prompt['id'] not in regenerated
+        turns = []
+        for turn in range(1, len(answers) + 1):
+            record = checkpoint.get(f"{prompt['id']}#{turn}")
+            if is_usable_judgment(record, answers, turn, trust_legacy):
+                judgments.setdefault(prompt['id'], []).append(record)
+            else:
+                turns.append(turn)
         if turns:
             judge_bar.total += len(turns)
             judge_bar.refresh()
@@ -346,13 +361,15 @@ async def run(args: argparse.Namespace) -> None:
     to_generate = [] if args.answers else [
         p for p in prompts if not is_usable_answer(checkpoint, p['id'], len(p['messages']))
     ]
+    # Answers of these prompts are replaced by this run's output, so judgments
+    # made on earlier answers must not be reused for them.
+    regenerated = {p['id'] for p in to_generate}
     streaming = args.pipeline and bool(to_generate)
     if streaming:
         # Prompts whose answers are already complete can be judged right away.
         judge_bar = tqdm(total=0, desc='Judging', position=1)
-        pending = {p['id'] for p in to_generate}
         for prompt in prompts:
-            if prompt['id'] not in pending:
+            if prompt['id'] not in regenerated:
                 schedule_judging(prompt)
 
     if model_config is not None:
@@ -363,8 +380,9 @@ async def run(args: argparse.Namespace) -> None:
             for future in tqdm(asyncio.as_completed(tasks), total=len(tasks),
                                desc='Generating answers', position=0):
                 record = await future
-                if record['error'] is None:
-                    answers_by_id[record['key']] = record['answers']
+                # On failure keep only the turns answered in this run, so every
+                # judged turn belongs to the same conversation.
+                answers_by_id[record['key']] = record['answers']
                 async with lock:
                     append_checkpoint(partial_path, record)
                 if streaming and record['error'] is None:
@@ -372,7 +390,7 @@ async def run(args: argparse.Namespace) -> None:
         await target.close()
 
     # Sequential mode judges everything here; pipeline mode only picks up the
-    # prompts whose generation failed (their partial answers from earlier runs).
+    # prompts whose generation failed (the turns answered before the failure).
     if judge_bar is None:
         judge_bar = tqdm(total=0, desc='Judging')
     for prompt in prompts:

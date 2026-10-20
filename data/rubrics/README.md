@@ -66,6 +66,6 @@ def render_rubric(
     )
 ```
 
-For multi-turn prompts, `scripts/run_eval.py` renders the rubric once per turn with that turn's user message as `{question}`, and appends the earlier question–answer pairs after the rendered rubric as a conversation history block (see [`src/rubric/render.py`](../../src/rubric/render.py)).
+For multi-turn prompts, `scripts/run_eval.py` renders the rubric once per turn with that turn's user message as `{question}`, and inserts the earlier question–answer pairs as a conversation history block right after the `</safety_categories>` tag (`</安全类目>` in Chinese rubrics), so the judge reads the dialogue before the safety and usefulness items (see [`src/rubric/render.py`](../../src/rubric/render.py)).
 
 The structural definition is available in [`schema.json`](schema.json).
