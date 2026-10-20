@@ -96,6 +96,22 @@ actionable.
   following and safety refusal compete in current training, and existing benchmarks rarely cover
   this kind of attack.
 
+**Recently released models.** We further evaluated four recently released models under exactly the
+same protocol (the same 3,489 prompts and prompt-level rubrics, no system prompt, the same decoding
+configuration, and Hy3 as the rubric-guided judge). Their results are consistent with the findings
+above: every model is clearly less safe on DiagAttack than on DiagBase.
+
+| Model | Overall ↓ | DiagBase ↓ | DiagAttack ↓ | Usefulness ↑ |
+|---|:---:|:---:|:---:|:---:|
+| Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
+| GLM-5.3<sup>†</sup> | 9.7 | 8.3 | 12.6 | 2.34 |
+| Hy4-Preview | 11.9 | 3.9 | 30.6 | 2.27 |
+| DeepSeek-V4.1-Flash | 18.5 | 5.8 | 47.5 | 2.14 |
+
+Unsafe rates are in %; usefulness is the average score (0–3).
+<sup>†</sup> GLM-5.3 cannot disable its reasoning mode, so it is evaluated with the low reasoning-effort
+setting; all other settings are identical.
+
 ### More diagnostics
 
 Item-level judgments also expose differences that an overall unsafe rate hides. Left: each model on
@@ -114,26 +130,6 @@ unsafe rate keeps rising as a conversation unfolds:
   <img src="assets/unsafe_rate_by_lang.png" width="53%" alt="Unsafe rates by language">
   <img src="assets/unsafe_rate_by_turn_all.png" width="45%" alt="Unsafe rates by turn">
 </p>
-
-### Results on recently released models
-
-After the main experiments were completed, we evaluated several newly released models under exactly the
-same protocol (the same 3,489 prompts and prompt-level rubrics, no system prompt, the same decoding
-configuration, and Hy3 as the rubric-guided judge). These results are a supplement only and are not
-included in the analyses above.
-
-| Model | Overall ↓ | DiagBase ↓ | DiagAttack ↓ | Usefulness ↑ |
-|---|:---:|:---:|:---:|:---:|
-| Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
-| GLM-5.3<sup>†</sup> | 9.7 | 8.3 | 12.6 | 2.34 |
-| Hy4-Preview | 11.9 | 3.9 | 30.6 | 2.27 |
-| DeepSeek-V4.1-Flash | 18.5 | 5.8 | 47.5 | 2.14 |
-
-Unsafe rates are in %; usefulness is the average score (0–3). A multi-turn prompt counts as unsafe if
-any turn is unsafe, and its usefulness is the lowest score across turns. Prompts whose judgments are
-entirely missing are excluded from the denominators. Models are sorted by overall unsafe rate.
-<sup>†</sup> GLM-5.3 cannot disable its reasoning mode, so it is evaluated with the low reasoning-effort
-setting; all other settings are identical.
 
 See the [paper](paper/DiagSafe.pdf) for the full experiments and analysis.
 

@@ -91,6 +91,20 @@ rubric 合理且可执行的比例为 99.6%。
 - 把有害意图包装进正常任务，就能显著削弱模型的安全拒答：指令遵循与安全拒答在当前训练中存在冲突，
   而这类攻击正是现有 benchmark 较少覆盖的。
 
+**新发布模型。** 我们按完全相同的协议（相同的 3,489 条 prompt 与 prompt-level rubric、不加 system prompt、
+相同的解码配置、以 Hy3 作为 rubric 引导的 judge）进一步评测了 4 款新发布的模型，结论与上文分析一致：
+每个模型在 DiagAttack 上都明显更不安全。
+
+| 模型 | 整体 ↓ | DiagBase ↓ | DiagAttack ↓ | 有用性 ↑ |
+|---|:---:|:---:|:---:|:---:|
+| Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
+| GLM-5.3<sup>†</sup> | 9.7 | 8.3 | 12.6 | 2.34 |
+| Hy4-Preview | 11.9 | 3.9 | 30.6 | 2.27 |
+| DeepSeek-V4.1-Flash | 18.5 | 5.8 | 47.5 | 2.14 |
+
+unsafe rate 单位为 %，有用性为平均得分（0–3）。
+<sup>†</sup> GLM-5.3 无法关闭推理模式，因此使用低推理强度设置评测，其余设置与其他模型完全一致。
+
 ### 更多诊断
 
 条目级判定还能揭示整体 unsafe rate 掩盖的差异。下图左侧为各模型在 11 个一级维度上的安全性–有用性分布，
@@ -107,23 +121,6 @@ rubric 合理且可执行的比例为 99.6%。
   <img src="assets/unsafe_rate_by_lang.png" width="53%" alt="中英文 unsafe rate">
   <img src="assets/unsafe_rate_by_turn_all.png" width="45%" alt="多轮 unsafe rate">
 </p>
-
-### 新发布模型的评测结果
-
-主实验完成后，我们按完全相同的协议（相同的 3,489 条 prompt 与 prompt-level rubric、不加 system prompt、
-相同的解码配置、以 Hy3 作为 rubric 引导的 judge）补充评测了几款新发布的模型。以下结果仅作补充，
-未纳入上文分析。
-
-| 模型 | 整体 ↓ | DiagBase ↓ | DiagAttack ↓ | 有用性 ↑ |
-|---|:---:|:---:|:---:|:---:|
-| Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
-| GLM-5.3<sup>†</sup> | 9.7 | 8.3 | 12.6 | 2.34 |
-| Hy4-Preview | 11.9 | 3.9 | 30.6 | 2.27 |
-| DeepSeek-V4.1-Flash | 18.5 | 5.8 | 47.5 | 2.14 |
-
-unsafe rate 单位为 %，有用性为平均得分（0–3）。多轮 prompt 只要任一轮不安全即计为不安全，其有用性取各轮最低分；
-判定结果完全缺失的 prompt 不计入分母。模型按整体 unsafe rate 升序排列。
-<sup>†</sup> GLM-5.3 无法关闭推理模式，因此使用低推理强度设置评测，其余设置与其他模型完全一致。
 
 完整实验与分析见[论文](paper/DiagSafe.pdf)。
 
