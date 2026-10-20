@@ -1,17 +1,23 @@
-# DiagSafe
-
 [English](README.md) | **简体中文**
 
-**基于 Prompt-Level Rubric 的大模型安全诊断评测**
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/tencent_hy_logo_dark.png">
+    <img src="assets/tencent_hy_logo.png" alt="Tencent HY" width="480">
+  </picture>
 
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-[![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper/DiagSafe.pdf)
+  # DiagSafe
 
-> 论文：*Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics*
-> ([arXiv:XXXX.XXXXX](https://arxiv.org/abs/XXXX.XXXXX) · [PDF](paper/DiagSafe.pdf))
+  ### Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics
+
+
+  [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
+  ![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b.svg)
+  [![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper/DiagSafe.pdf)
+</div>
 
 ---
+
 
 ## 项目简介
 
