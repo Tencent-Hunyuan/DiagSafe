@@ -26,7 +26,7 @@
 
 Together they yield reliable, explainable judgments and fine-grained safety diagnoses of each model.
 
-<p align="center"><img src="assets/figure1_overview.png" width="100%" alt="DiagSafe evaluation overview"></p>
+<p align="center"><img src="assets/fig_diagsafe_overview_chartvariant_anon.png" width="100%" alt="DiagSafe evaluation overview"></p>
 
 <p align="center"><sub>(1) One rubric per prompt; (2) different judges reach consistent verdicts with the same rubric; (3) item-level hits expose the specific risks of each model.</sub></p>
 
@@ -45,7 +45,7 @@ generated from the standard of its label. The leaf-level comparison below is aga
 S-Eval, Do-Not-Answer and CHiSafetyBench: red leaves have no counterpart in those benchmarks, and
 orange leaves are covered there only by a parent category.
 
-<p align="center"><img src="assets/taxonomy.png" width="92%" alt="DiagSafe taxonomy comparison"></p>
+<p align="center"><img src="assets/taxonomy_sunburst.png" width="92%" alt="DiagSafe taxonomy comparison"></p>
 
 ### DiagBase and DiagAttack
 
@@ -57,7 +57,7 @@ orange leaves are covered there only by a parent category.
 | Dialogues | 1,472 single-turn, 929 multi-turn | All single-turn |
 | Focus | Label coverage, safety across languages and multi-turn dialogues | The conflict between strong instruction following and safety refusal |
 
-<p align="center"><img src="assets/data-synthesis-pipeline-v2.png" width="92%" alt="Prompt and rubric synthesis pipeline"></p>
+<p align="center"><img src="assets/fig_diagsafe_pipeline_anon.png" width="92%" alt="Prompt and rubric synthesis pipeline"></p>
 
 ## Key Results
 
@@ -81,7 +81,7 @@ actionable.
 
 ### 2. Leading LLMs remain unsafe, especially on DiagAttack
 
-<p align="center"><img src="assets/unsafe_rate_by_subset.png" width="80%" alt="Unsafe rates on DiagBase and DiagAttack"></p>
+<p align="center"><img src="assets/unsafe_rate_by_source.png" width="80%" alt="Unsafe rates on DiagBase and DiagAttack"></p>
 
 - On DiagBase, unsafe rates range from 2.8% to 32.9%.
 - On DiagAttack, **every model's** unsafe rate rises to **1.9–8.4×** its DiagBase value (median 5.3×);
@@ -97,7 +97,7 @@ the safety–usefulness plane across the 11 L1 dimensions. Right: three models w
 overall unsafe rates diverge sharply at the category level.
 
 <p align="center">
-  <img src="assets/safety_usefulness.png" width="39%" alt="Safety–usefulness profile">
+  <img src="assets/safety_usefulness_by_l1.png" width="39%" alt="Safety–usefulness profile">
   <img src="assets/category_profile.png" width="59%" alt="Per-category unsafe rates">
 </p>
 
@@ -105,8 +105,8 @@ Models are generally more vulnerable in **Chinese** and in **multi-turn** dialog
 unsafe rate keeps rising as a conversation unfolds:
 
 <p align="center">
-  <img src="assets/unsafe_rate_by_language.png" width="53%" alt="Unsafe rates by language">
-  <img src="assets/unsafe_rate_by_turn.png" width="45%" alt="Unsafe rates by turn">
+  <img src="assets/unsafe_rate_by_lang.png" width="53%" alt="Unsafe rates by language">
+  <img src="assets/unsafe_rate_by_turn_all.png" width="45%" alt="Unsafe rates by turn">
 </p>
 
 See the [paper](paper/DiagSafe.pdf) for the full experiments and analysis.
