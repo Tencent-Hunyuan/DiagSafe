@@ -1,12 +1,19 @@
-# DiagSafe
-
 **English** | [简体中文](README_zh.md)
 
-**Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics**
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/tencent_hy_logo_dark.png">
+    <img src="assets/tencent_hy_logo.png" alt="Tencent HY" width="360">
+  </picture>
 
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-[![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper/DiagSafe.pdf)
+  # DiagSafe
+
+  **Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics**
+
+  [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
+  [![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
+  [![Paper](https://img.shields.io/badge/Paper-PDF-red)](https://diagsafe.pdf/)
+</div>
 
 > Paper: *Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics*
 > ([arXiv:XXXX.XXXXX](https://arxiv.org/abs/XXXX.XXXXX) · [PDF](paper/DiagSafe.pdf))
