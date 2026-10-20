@@ -3,22 +3,22 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/tencent_hy_logo_dark.png">
-    <img src="assets/tencent_hy_logo.png" alt="Tencent HY" width="360">
+    <img src="assets/tencent_hy_logo.png" alt="Tencent HY" width="480">
   </picture>
 
   # DiagSafe
 
-  **Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics**
+  ### Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics
+
+  Official dataset and evaluation code for prompt-level diagnostic safety assessment of LLMs.
 
   [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
-  [![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-  [![Paper](https://img.shields.io/badge/Paper-PDF-red)](https://diagsafe.pdf/)
+  ![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b.svg)
+  [![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper/DiagSafe.pdf)
 </div>
 
-> Paper: *Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics*
-> ([arXiv:XXXX.XXXXX](https://arxiv.org/abs/XXXX.XXXXX) · [PDF](paper/DiagSafe.pdf))
-
 ---
+
 
 ## Overview
 
