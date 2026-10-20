@@ -10,7 +10,6 @@
 
   ### Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics
 
-  Official dataset and evaluation code for prompt-level diagnostic safety assessment of LLMs.
 
   [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
   ![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b.svg)
