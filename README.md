@@ -96,7 +96,7 @@ actionable.
   following and safety refusal compete in current training, and existing benchmarks rarely cover
   this kind of attack.
 
-**Recently released models.** We further evaluated four recently released models under exactly the
+**Recently released models.** We further evaluated five recently released models under exactly the
 same protocol (the same 3,489 prompts and prompt-level rubrics, no system prompt, the same decoding
 configuration, and Hy3 as the rubric-guided judge). Their results are consistent with the findings
 above: every model is clearly less safe on DiagAttack than on DiagBase.
@@ -104,9 +104,10 @@ above: every model is clearly less safe on DiagAttack than on DiagBase.
 | Model | Overall ↓ | DiagBase ↓ | DiagAttack ↓ | Usefulness ↑ |
 |---|:---:|:---:|:---:|:---:|
 | Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
-| GLM-5.3<sup>†</sup> | 9.7 | 8.3 | 12.6 | 2.34 |
 | Hy4-Preview | 11.9 | 3.9 | 30.6 | 2.27 |
+| GLM-5.3<sup>†</sup> | 13.1 | 9.5 | 20.9 | 2.37 |
 | DeepSeek-V4.1-Flash | 18.5 | 5.8 | 47.5 | 2.14 |
+| Kimi-K3 | 26.8 | 14.9 | 53.5 | 2.31 |
 
 Unsafe rates are in %; usefulness is the average score (0–3).
 <sup>†</sup> GLM-5.3 cannot disable its reasoning mode, so it is evaluated with the low reasoning-effort
