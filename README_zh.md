@@ -24,7 +24,7 @@
 
 二者结合，DiagSafe 给出高置信、可解释的评判结果，以及细粒度的模型安全诊断结论。
 
-<p align="center"><img src="assets/figure1_overview.png" width="100%" alt="DiagSafe 评测概览"></p>
+<p align="center"><img src="assets/fig_diagsafe_overview_chartvariant_anon.png" width="100%" alt="DiagSafe 评测概览"></p>
 
 <p align="center"><sub>（1）每条 prompt 一份专属 rubric；（2）不同 judge 依据同一 rubric 得到一致结论；（3）条目级命中情况揭示不同模型的具体风险。</sub></p>
 
@@ -42,7 +42,7 @@
 与 SALAD-Bench、S-Eval、Do-Not-Answer、CHiSafetyBench 的叶子级对比如下，
 红色为其他 benchmark 未覆盖的标签，橙色为其他 benchmark 只覆盖到上级类目的标签。
 
-<p align="center"><img src="assets/taxonomy.png" width="92%" alt="DiagSafe 分类体系对比"></p>
+<p align="center"><img src="assets/taxonomy_sunburst.png" width="92%" alt="DiagSafe 分类体系对比"></p>
 
 ### DiagBase 与 DiagAttack
 
@@ -54,7 +54,7 @@
 | 对话 | 单轮 1,472 条、多轮 929 条 | 均为单轮 |
 | 考察重点 | 标签覆盖面、语言与多轮场景下的安全性 | 强指令遵循与安全拒答之间的冲突 |
 
-<p align="center"><img src="assets/data-synthesis-pipeline-v2.png" width="92%" alt="数据与 rubric 合成流程"></p>
+<p align="center"><img src="assets/fig_diagsafe_pipeline_anon.png" width="92%" alt="数据与 rubric 合成流程"></p>
 
 ## 关键结果
 
@@ -77,7 +77,7 @@ rubric 合理且可执行的比例为 99.6%。
 
 ### 2. 主流 LLM 的安全表现仍然堪忧，DiagAttack 下尤为突出
 
-<p align="center"><img src="assets/unsafe_rate_by_subset.png" width="80%" alt="各模型在 DiagBase 与 DiagAttack 上的 unsafe rate"></p>
+<p align="center"><img src="assets/unsafe_rate_by_source.png" width="80%" alt="各模型在 DiagBase 与 DiagAttack 上的 unsafe rate"></p>
 
 - 在 DiagBase 上，各模型的 unsafe rate 为 2.8% – 32.9%。
 - 换成 DiagAttack 后，**每个模型**的 unsafe rate 都升至原来的 **1.9 – 8.4 倍**（中位数 5.3 倍），
@@ -91,15 +91,15 @@ rubric 合理且可执行的比例为 99.6%。
 右侧为整体 unsafe rate 几乎相同的三个模型在类目层面的显著差异。
 
 <p align="center">
-  <img src="assets/safety_usefulness.png" width="39%" alt="安全性–有用性分布">
+  <img src="assets/assets/safety_usefulness_by_l1.png" width="39%" alt="安全性–有用性分布">
   <img src="assets/category_profile.png" width="59%" alt="类目级 unsafe rate">
 </p>
 
 模型在**中文**和**多轮**场景下普遍更容易出现不安全回答，且随着对话推进，逐轮 unsafe rate 持续上升：
 
 <p align="center">
-  <img src="assets/unsafe_rate_by_language.png" width="53%" alt="中英文 unsafe rate">
-  <img src="assets/unsafe_rate_by_turn.png" width="45%" alt="多轮 unsafe rate">
+  <img src="assets/unsafe_rate_by_lang.png" width="53%" alt="中英文 unsafe rate">
+  <img src="assets/unsafe_rate_by_turn_all.png" width="45%" alt="多轮 unsafe rate">
 </p>
 
 完整实验与分析见[论文](paper/DiagSafe.pdf)。
