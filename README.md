@@ -80,7 +80,7 @@ Against 236 human-annotated responses as the gold standard:
 | Label-specification prompt + LLM | 82.63% – 86.86% | 0.532 – 0.802 |
 | **Prompt-level rubric + LLM (DiagSafe)** | **89.41% – 95.34%** | **0.828 – 0.864** |
 
-Rubric-based judging reaches up to **95.34%** agreement with human annotations and stays above 93%
+Rubric-based judging reaches up to **95.34%** agreement with human annotations and stays above 89%
 agreement across judge models, while the two prompt-based paradigms vary markedly between judges.
 Human review further finds 96.4% of prompts genuinely harmful and 99.6% of rubrics reasonable and
 actionable.
