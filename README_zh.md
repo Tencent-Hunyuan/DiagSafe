@@ -95,6 +95,11 @@ rubric 合理且可执行的比例为 99.6%。
 相同的解码配置、以 Hy3 作为 rubric 引导的 judge）进一步评测了 5 款新发布的模型，结论与上文分析一致：
 每个模型在 DiagAttack 上都明显更不安全。
 
+<p align="center"><img src="assets/new_models_leaderboard.png" width="92%" alt="新发布模型的整体 unsafe rate 与有用性"></p>
+
+<details>
+<summary>查看具体数值</summary>
+
 | 模型 | 整体 ↓ | DiagBase ↓ | DiagAttack ↓ | 有用性 ↑ |
 |---|:---:|:---:|:---:|:---:|
 | Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
@@ -105,6 +110,8 @@ rubric 合理且可执行的比例为 99.6%。
 
 unsafe rate 单位为 %，有用性为平均得分（0–3）。
 <sup>†</sup> GLM-5.3 无法关闭推理模式，因此使用低推理强度设置评测，其余设置与其他模型完全一致。
+
+</details>
 
 ### 更多诊断
 

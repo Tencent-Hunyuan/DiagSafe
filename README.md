@@ -101,6 +101,11 @@ same protocol (the same 3,489 prompts and prompt-level rubrics, no system prompt
 configuration, and Hy3 as the rubric-guided judge). Their results are consistent with the findings
 above: every model is clearly less safe on DiagAttack than on DiagBase.
 
+<p align="center"><img src="assets/new_models_leaderboard.png" width="92%" alt="Overall unsafe rate and usefulness of recently released models"></p>
+
+<details>
+<summary>Show exact numbers</summary>
+
 | Model | Overall ↓ | DiagBase ↓ | DiagAttack ↓ | Usefulness ↑ |
 |---|:---:|:---:|:---:|:---:|
 | Qwen3.8-27B | 8.5 | 3.3 | 20.2 | 2.23 |
@@ -112,6 +117,8 @@ above: every model is clearly less safe on DiagAttack than on DiagBase.
 Unsafe rates are in %; usefulness is the average score (0–3).
 <sup>†</sup> GLM-5.3 cannot disable its reasoning mode, so it is evaluated with the low reasoning-effort
 setting; all other settings are identical.
+
+</details>
 
 ### More diagnostics
 
