@@ -12,8 +12,9 @@
 
 
   [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
-  [![arXiv](https://img.shields.io/badge/arXiv-2610.29225-b31b1b.svg)](https://arxiv.org/abs/2610.29225)
+  ![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b.svg)
   [![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper/DiagSafe.pdf)
+  [![Dashboard](https://img.shields.io/badge/Dashboard-Online-0f766e)](https://tencent-hunyuan.github.io/DiagSafe/)
 </div>
 
 ---
@@ -305,7 +306,8 @@ pip install -r requirements.txt
 
 ## 数据集可视化面板
 
-浏览全部 prompt、对应的 rubric 与 84 个标签的中英文标准：
+可直接在线浏览全部 prompt、对应的 rubric 与 84 个标签的中英文标准：
+**[tencent-hunyuan.github.io/DiagSafe](https://tencent-hunyuan.github.io/DiagSafe/)**，也可在本地运行：
 
 ```bash
 pip install -r dashboard/requirements.txt
