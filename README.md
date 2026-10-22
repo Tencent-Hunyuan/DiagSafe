@@ -132,7 +132,7 @@ unsafe rate keeps rising as a conversation unfolds:
   <img src="assets/unsafe_rate_by_turn_all.png" width="45%" alt="Unsafe rates by turn">
 </p>
 
-See the [paper](paper/DiagSafe.pdf) for the full experiments and analysis.
+See the [paper](https://arxiv.org/abs/2610.29225) for the full experiments and analysis.
 
 ## Repository Structure
 

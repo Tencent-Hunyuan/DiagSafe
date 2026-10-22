@@ -123,7 +123,7 @@ unsafe rate 单位为 %，有用性为平均得分（0–3）。
   <img src="assets/unsafe_rate_by_turn_all.png" width="45%" alt="多轮 unsafe rate">
 </p>
 
-完整实验与分析见[论文](paper/DiagSafe.pdf)。
+完整实验与分析见[论文](https://arxiv.org/abs/2610.29225)。
 
 ## 仓库结构
 
