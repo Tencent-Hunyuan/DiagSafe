@@ -12,7 +12,7 @@
 
 
   [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
-  ![arXiv](https://img.shields.io/badge/arXiv-Coming_Soon-b31b1b.svg)
+  [![arXiv](https://img.shields.io/badge/arXiv-2610.29225-b31b1b.svg)](https://arxiv.org/abs/2610.29225)
   [![Paper](https://img.shields.io/badge/Paper-PDF-red)](paper/DiagSafe.pdf)
 </div>
 
