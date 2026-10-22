@@ -9,6 +9,7 @@ max_tokens: 4096
 concurrency: 16                     # maximum concurrent requests
 max_retries: 5                      # attempts per request, with exponential backoff
 timeout: 120                        # request timeout in seconds
+answer_key: content                 # key in the response to extract the answer, eg ["content", "reasoning_content"]
 
 # Server-specific request fields; set enable_thinking to match the
 # configuration you intend to evaluate.

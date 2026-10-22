@@ -32,6 +32,7 @@ class ChatClient:
             timeout=float(config.get('timeout', 120)),
             max_retries=0,
         )
+        self.answer_key = config.get('answer_key', 'content')
 
     def _request_options(self) -> Dict[str, Any]:
         """Build the optional request options; empty when nothing is configured."""
@@ -57,7 +58,11 @@ class ChatClient:
                         max_tokens=self.max_tokens,
                         **self._request_options(),
                     )
-                    content = response.choices[0].message.content
+                    print(response)
+                    if self.answer_key == 'content':
+                        content = response.choices[0].message.content
+                    elif self.answer_key == 'reasoning_content':
+                        content = response.choices[0].message.reasoning_content
                     if content is None:
                         raise ValueError('Empty response content')
                     return content
