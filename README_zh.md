@@ -14,6 +14,7 @@
   [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
   [![arXiv](https://img.shields.io/badge/arXiv-2610.29225-b31b1b.svg)](https://arxiv.org/abs/2610.29225)
   [![Dashboard](https://img.shields.io/badge/Dashboard-Online-0f766e)](https://tencent-hunyuan.github.io/DiagSafe/)
+  [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-tencent%2FDiagSafe-ffc107)](https://huggingface.co/datasets/tencent/DiagSafe)
 </div>
 
 ---
@@ -77,7 +78,7 @@
 | 标签标准 prompt + LLM | 82.63% – 86.86% | 0.532 – 0.802 |
 | **Prompt-level rubric + LLM（DiagSafe）** | **89.41% – 95.34%** | **0.828 – 0.864** |
 
-Rubric 评估与人工标注的一致率最高可达 **95.34%**，换用不同 judge 时一致率始终保持在 89% 以上；
+Rubric 评估与人工标注的一致率最高可达 **95.34%**，换用不同 judge 时一致率始终保持在 93% 以上；
 另外两种 prompt 方式在不同 judge 之间波动明显。人工复核还显示，prompt 有害性合格率为 96.4%，
 rubric 合理且可执行的比例为 99.6%。
 

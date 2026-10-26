@@ -14,6 +14,7 @@
   [![License](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE)
   [![arXiv](https://img.shields.io/badge/arXiv-2610.29225-b31b1b.svg)](https://arxiv.org/abs/2610.29225)
   [![Dashboard](https://img.shields.io/badge/Dashboard-Online-0f766e)](https://tencent-hunyuan.github.io/DiagSafe/)
+  [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-tencent%2FDiagSafe-ffc107)](https://huggingface.co/datasets/tencent/DiagSafe)
 </div>
 
 ---
@@ -80,7 +81,7 @@ Against 236 human-annotated responses as the gold standard:
 | Label-specification prompt + LLM | 82.63% – 86.86% | 0.532 – 0.802 |
 | **Prompt-level rubric + LLM (DiagSafe)** | **89.41% – 95.34%** | **0.828 – 0.864** |
 
-Rubric-based judging reaches up to **95.34%** agreement with human annotations and stays above 89%
+Rubric-based judging reaches up to **95.34%** agreement with human annotations and stays above 93%
 agreement across judge models, while the two prompt-based paradigms vary markedly between judges.
 Human review further finds 96.4% of prompts genuinely harmful and 99.6% of rubrics reasonable and
 actionable.
