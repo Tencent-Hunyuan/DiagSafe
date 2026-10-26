@@ -198,6 +198,7 @@ pip install -r requirements.txt
    | `top_p` | nucleus sampling；`null` 表示不发送，由服务端决定 | `null` |
    | `extra_body` | 服务端专有参数，原样放入请求体，如 vLLM 的 `chat_template_kwargs`、`top_k`、`repetition_penalty` | `{}` |
    | `extra_headers` | 额外的 HTTP 请求头，如 `X-Request-Id` | `{}` |
+   | `answer_key` | 从响应的哪个字段读取回答：`content`；若服务端把回答放在 `reasoning_content` 中，则设为 `reasoning_content` | `content` |
 
    vLLM 服务可直接使用 `configs/judge_vllm.yaml` 与 `configs/model_vllm.yaml`，
    其中 `extra_body` 已设置 `chat_template_kwargs: {enable_thinking: false}`。
@@ -234,7 +235,7 @@ pip install -r requirements.txt
    | 不改任何配置 | 续跑 |
    | 调整 `--limit`（如 20 → 全量） | 续跑，只补跑新增条目 |
    | 修改 `base_url`、`api_key`、`concurrency`、`timeout`、`max_retries`、`extra_headers` | 续跑 |
-   | 修改 judge 或被测模型的 `model`、`temperature`、`max_tokens`、`top_p`、`extra_body` | 报错并列出变化的字段 |
+   | 修改 judge 或被测模型的 `model`、`temperature`、`max_tokens`、`top_p`、`extra_body`、`answer_key` | 报错并列出变化的字段 |
    | 修改 prompts、rubrics 或 `--answers` 文件内容 | 报错 |
 
    评测新的模型或配置时，使用新的 `--output`。

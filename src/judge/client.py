@@ -11,6 +11,11 @@ from openai import AsyncOpenAI
 
 from src.utils.io import resolve_api_key
 
+# Message fields the answer can be read from: the final reply, or the reasoning
+# trace returned separately by some servers (e.g. vLLM with a reasoning parser).
+ANSWER_KEYS = ('content', 'reasoning_content')
+DEFAULT_ANSWER_KEY = 'content'
+
 
 class ChatClient:
     """Thin async wrapper around an OpenAI-compatible /chat/completions endpoint."""
@@ -32,7 +37,9 @@ class ChatClient:
             timeout=float(config.get('timeout', 120)),
             max_retries=0,
         )
-        self.answer_key = config.get('answer_key', 'content')
+        self.answer_key = config.get('answer_key') or DEFAULT_ANSWER_KEY
+        if self.answer_key not in ANSWER_KEYS:
+            raise ValueError(f"Unsupported answer_key {self.answer_key!r}; choose one of {', '.join(ANSWER_KEYS)}")
 
     def _request_options(self) -> Dict[str, Any]:
         """Build the optional request options; empty when nothing is configured."""
@@ -58,13 +65,11 @@ class ChatClient:
                         max_tokens=self.max_tokens,
                         **self._request_options(),
                     )
-                    print(response)
-                    if self.answer_key == 'content':
-                        content = response.choices[0].message.content
-                    elif self.answer_key == 'reasoning_content':
-                        content = response.choices[0].message.reasoning_content
+                    # Fields outside the OpenAI schema (reasoning_content) are kept
+                    # as extra attributes, absent when the server does not send them.
+                    content = getattr(response.choices[0].message, self.answer_key, None)
                     if content is None:
-                        raise ValueError('Empty response content')
+                        raise ValueError(f'Response has no {self.answer_key!r} field or it is empty')
                     return content
                 except Exception as error:  # noqa: BLE001 - retry any API/network error
                     last_error = error

@@ -33,6 +33,7 @@ from tqdm import tqdm
 
 from src.analyze import build_report
 from src.analyze import print_report
+from src.judge.client import DEFAULT_ANSWER_KEY
 from src.judge.client import ChatClient
 from src.judge.parse import parse_judgment
 from src.rubric.render import render_rubric
@@ -43,7 +44,10 @@ from src.utils.io import resolve_data_file
 PROMPTS_FILE = 'DiagSafe_bench_3489.jsonl'
 RUBRICS_FILE = 'DiagSafe_rubrics_3489.jsonl'
 JUDGE_PARSE_RETRIES = 3
-OUTPUT_AFFECTING_FIELDS = ('model', 'temperature', 'max_tokens', 'top_p', 'extra_body')
+OUTPUT_AFFECTING_FIELDS = ('model', 'temperature', 'max_tokens', 'top_p', 'extra_body', 'answer_key')
+# Values equal to the client default count as unset, so checkpoints recorded
+# before a field existed still resume when the field is set to its default.
+FIELD_DEFAULTS = {'answer_key': DEFAULT_ANSWER_KEY}
 
 
 def parse_args() -> argparse.Namespace:
@@ -94,13 +98,14 @@ def request_settings(config: Dict[str, Any]) -> Dict[str, Any]:
 
     Credentials, endpoint address, concurrency, timeouts, retries and request
     headers are left out: they do not affect what the model returns. Empty
-    values (`extra_body: {}`, `top_p: null`) count as unset, matching how the
-    client sends requests.
+    values (`extra_body: {}`, `top_p: null`) and defaults (`answer_key: content`)
+    count as unset, matching how the client sends requests.
     """
     settings = {}
     for field in OUTPUT_AFFECTING_FIELDS:
         value = config.get(field)
-        settings[field] = None if value in ({}, [], '') else value
+        unset = value in ({}, [], '') or (field in FIELD_DEFAULTS and value == FIELD_DEFAULTS[field])
+        settings[field] = None if unset else value
     return settings
 
 
