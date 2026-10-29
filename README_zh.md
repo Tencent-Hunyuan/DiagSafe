@@ -195,7 +195,7 @@ pip install -r requirements.txt
    | `base_url` / `api_key` / `model` | 服务地址、密钥与模型名 | 必填 |
    | `temperature` / `max_tokens` | 采样温度与最大生成长度 | `0` / `4096` |
    | `concurrency` / `max_retries` / `timeout` | 最大并发数、每个请求的重试次数（指数退避）、超时秒数 | `16` / `5` / `120` |
-   | `top_p` | nucleus sampling；`null` 表示不发送，由服务端决定 | `null` |
+   | `top_p` | 核采样；`null` 表示不发送，由服务端决定 | `null` |
    | `extra_body` | 服务端专有参数，原样放入请求体，如 vLLM 的 `chat_template_kwargs`、`top_k`、`repetition_penalty` | `{}` |
    | `extra_headers` | 额外的 HTTP 请求头，如 `X-Request-Id` | `{}` |
    | `answer_key` | 从响应的哪个字段读取回答：`content`；若服务端把回答放在 `reasoning_content` 中，则设为 `reasoning_content` | `content` |
