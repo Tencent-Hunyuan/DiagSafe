@@ -239,7 +239,7 @@ async function renderOverview() {
         { label: 'DiagBase', value: summary.subsets.DiagBase },
         { label: 'DiagAttack', value: summary.subsets.DiagAttack },
       ])}</div>
-    <div class="card"><div class="card-title">Dialogue length</div>
+    <div class="card"><div class="card-title">Number of turns</div>
       ${donutCard(turnBuckets)}</div>`;
 }
 
