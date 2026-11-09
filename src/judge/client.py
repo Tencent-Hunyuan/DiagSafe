@@ -19,9 +19,10 @@ from openai import BadRequestError
 
 from src.utils.io import resolve_api_key
 
-# Message fields the answer can be read from: the final reply, or the reasoning
-# trace returned separately by some servers (e.g. vLLM with a reasoning parser).
-ANSWER_KEYS = ('content', 'reasoning_content')
+# What the judge evaluates for each turn of the model under evaluation: the
+# final answer (default), the chain of thought, or both together. The client
+# always keeps both; see src/rubric/render.py compose_judged_text().
+ANSWER_KEYS = ('content', 'reasoning_content', 'content+reasoning_content')
 DEFAULT_ANSWER_KEY = 'content'
 THINK_OPEN = '<think>'
 THINK_CLOSE = '</think>'
@@ -106,12 +107,6 @@ class ChatClient:
         }
         # Fields outside the OpenAI schema (reasoning_content) are kept as extra
         # attributes, absent when the server does not send them.
-        if self.answer_key != DEFAULT_ANSWER_KEY:
-            answer = getattr(message, self.answer_key, None)
-            if answer is None:
-                raise ValueError(f'Response has no {self.answer_key!r} field or it is empty')
-            return {'answer': answer, 'reasoning': '', 'reasoning_source': 'answer_key', **meta}
-
         raw = message.content
         reasoning_field = getattr(message, 'reasoning_content', None) or getattr(message, 'reasoning', None)
         answer, reasoning, source = split_reasoning(raw, reasoning_field)
@@ -119,9 +114,11 @@ class ChatClient:
             if choice.finish_reason == 'length':
                 raise TruncatedReasoning(
                     f'Output hit max_tokens={self.max_tokens} before the answer started')
-            # A reply that is empty on its own is returned as is; one that is empty
-            # only after the reasoning was removed, or missing, is retried.
-            if raw is None or reasoning:
+            # When only the final answer is judged, a reply that is empty only after
+            # the reasoning was removed, or missing, is retried. When the reasoning is
+            # judged too, a turn with reasoning but no separate answer is kept.
+            judges_reasoning = self.answer_key != DEFAULT_ANSWER_KEY and bool(reasoning)
+            if (raw is None or reasoning) and not judges_reasoning:
                 raise ValueError('Response has no answer outside the reasoning')
         return {'answer': answer, 'reasoning': reasoning, 'reasoning_source': source, **meta}
 

@@ -158,6 +158,7 @@ DiagSafe/
 │   └── analyze.py           # Grouped statistics
 ├── scripts/
 │   ├── run_eval.py          # End-to-end evaluation
+│   ├── export_answers.py    # Export answers and reasoning for re-judging
 │   └── analyze.py           # Re-analysis of an existing results file
 ├── configs/                 # Judge and model configurations (OpenAI API, vLLM)
 ├── dashboard/               # Dataset dashboard (local server and static export)
@@ -208,15 +209,39 @@ the LLM-as-a-judge).
    | `top_p` | Nucleus sampling; `null` sends nothing and leaves it to the server | `null` |
    | `extra_body` | Server-specific fields added to the request body as is, e.g. vLLM's `chat_template_kwargs`, `top_k`, `repetition_penalty` | `{}` |
    | `extra_headers` | Additional HTTP headers, e.g. `X-Request-Id` | `{}` |
-   | `answer_key` | Response field read as the answer: `content`, or `reasoning_content` for servers that return the reply there | `content` |
+   | `answer_key` | What the judge evaluates in each turn of the evaluated model: `content` (final answer), `reasoning_content` (chain of thought) or `content+reasoning_content` (both); see *Reasoning models* below | `content` |
    | `name` | Optional label used for the default output file name; set it to tell two settings of one model apart (e.g. `GLM-5.3-low`) | `model` |
    | `endpoints` | Optional list of endpoints serving the same model, each with its own `base_url`, `model` and `concurrency`; requests go to the endpoint with the most free capacity and a failed request is retried on another one. Top-level fields are shared by all endpoints | none |
 
    **Reasoning models.** A chain of thought returned in `reasoning_content`, or before a
-   `</think>` tag in `content`, is split off: only the final answer is judged and sent back as
-   context for the next turn. The chain of thought is kept per turn under `generation` in the
-   results file. If a model reaches `max_tokens` before it starts answering, that turn fails
+   `</think>` tag in `content`, is split off from the final answer. Only the final answer is sent
+   back as context for the next turn, and the chain of thought is kept per turn under `generation`
+   in the results file. If a model reaches `max_tokens` before it starts answering, that turn fails
    instead of judging the reasoning as an answer, so give reasoning models a large `max_tokens`.
+
+   `answer_key` (or `--answer-key`, which overrides it) selects what the judge evaluates:
+
+   | `answer_key` | Text placed in the rubric's `{answer}` |
+   |---|---|
+   | `content` (default) | The final answer, as in the paper |
+   | `reasoning_content` | The chain of thought only; turns without one are recorded as incomplete |
+   | `content+reasoning_content` | Both, as `<reasoning>…</reasoning>` followed by `<final_answer>…</final_answer>` (`<思考过程>` / `<最终回答>` for Chinese prompts) |
+
+   Earlier turns are always shown to the judge with their final answers only. Thinking itself is
+   switched on per model in `extra_body` (see `configs/model_reasoning_vllm.yaml`). Note that the
+   paper's human-agreement study covers final answers only; judgments of the chain of thought have
+   not been validated against human annotations, and usefulness scores are less meaningful there.
+
+   To judge an existing run in another mode without generating the answers again, export its
+   answers and chains of thought, then pass them with `--answers`. Prompts whose generation failed
+   are skipped by the export; add `--allow-missing-answers` to count them as incomplete:
+
+   ```bash
+   python scripts/export_answers.py --results results/<model>.json --output answers/<model>.jsonl
+   python scripts/run_eval.py --prompts data/prompts --rubrics data/rubrics --judge configs/judge.yaml \
+       --answers answers/<model>.jsonl --answer-key content+reasoning_content \
+       --output results/<model>-with-reasoning.json
+   ```
 
    For vLLM servers, use `configs/judge_vllm.yaml` and `configs/model_vllm.yaml`; their
    `extra_body` already sets `chat_template_kwargs: {enable_thinking: false}`.
@@ -238,7 +263,9 @@ the LLM-as-a-judge).
    | Option | Effect |
    |---|---|
    | `--model configs/model.yaml` | Generate answers online with the model under evaluation |
-   | `--answers answers.jsonl` | Judge existing answers instead of `--model`: `{"id", "answer"}` per single-turn prompt, `{"id", "answers": [...]}` with one answer per turn for multi-turn prompts |
+   | `--answers answers.jsonl` | Judge existing answers instead of `--model`: `{"id", "answer"}` per single-turn prompt, `{"id", "answers": [...]}` with one answer per turn for multi-turn prompts; optional `"reasoning"` / `"reasonings"` hold the chain of thought |
+   | `--answer-key MODE` | What the judge evaluates: `content`, `reasoning_content` or `content+reasoning_content`; overrides `answer_key` in the model config |
+   | `--allow-missing-answers` | With `--answers`, count prompts without an answer as incomplete instead of stopping |
    | `--prompts` / `--rubrics` | Data directory or file |
    | `--limit N` | Evaluate only the first N prompts |
    | `--pipeline` | Optional. Judge each prompt as soon as its answers are generated, so generation and judging run concurrently and the run finishes sooner; results are identical to the default |
@@ -258,7 +285,7 @@ the LLM-as-a-judge).
    | `--limit` (e.g. 20 → full set) | Resumes and runs only the new prompts |
    | `base_url`, `api_key`, `concurrency`, `timeout`, `max_retries`, `extra_headers` | Resumes |
    | `model`, `temperature`, `max_tokens`, `top_p`, `extra_body` or `answer_key` of the judge or the evaluated model | Stops and lists the changed fields |
-   | Content of the prompts, rubrics or `--answers` file | Stops |
+   | Content of the prompts, rubrics or `--answers` file, or `--answer-key` | Stops |
 
    Use a new `--output` for each new model or configuration.
 

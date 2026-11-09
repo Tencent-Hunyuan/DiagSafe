@@ -37,11 +37,13 @@ from tqdm import tqdm
 
 from src.analyze import build_report
 from src.analyze import print_report
+from src.judge.client import ANSWER_KEYS
 from src.judge.client import DEFAULT_ANSWER_KEY
 from src.judge.client import ContextTooLong
 from src.judge.client import TruncatedReasoning
 from src.judge.parse import parse_judgment
 from src.judge.pool import make_client
+from src.rubric.render import compose_judged_text
 from src.rubric.render import render_rubric
 from src.utils.io import load_config
 from src.utils.io import read_jsonl
@@ -70,7 +72,15 @@ def parse_args() -> argparse.Namespace:
                         help='Model config YAML for online answer generation (default: configs/model.yaml)')
     source.add_argument('--answers', type=Path, default=None,
                         help='Pre-generated answers JSONL: {"id", "answer"} for single-turn prompts, '
-                             '{"id", "answers": [...]} with one answer per turn for multi-turn prompts')
+                             '{"id", "answers": [...]} with one answer per turn for multi-turn prompts; '
+                             'optional "reasoning" / "reasonings" hold the chain of thought (see --answer-key)')
+    parser.add_argument('--answer-key', choices=ANSWER_KEYS, default=None,
+                        help='What the judge evaluates in each turn: the final answer (content, default), '
+                             'the chain of thought (reasoning_content) or both (content+reasoning_content). '
+                             'Overrides answer_key in the model config')
+    parser.add_argument('--allow-missing-answers', action='store_true',
+                        help='With --answers, count prompts that lack an answer (or some turns) as incomplete '
+                             'instead of stopping, e.g. for a file exported from a run with failed generations')
     parser.add_argument('--limit', type=int, default=None, help='Evaluate only the first N prompts')
     parser.add_argument('--pipeline', action='store_true',
                         help='Judge each prompt as soon as its answers are generated, instead of '
@@ -197,11 +207,24 @@ def answers_digest(answers: List[str]) -> str:
     return hashlib.sha256(json.dumps(answers, ensure_ascii=False).encode('utf-8')).hexdigest()
 
 
-def is_usable_judgment(record: Any, answers: List[str], turn: int, trust_legacy: bool) -> bool:
+def judged_digest(answers: List[str], reasonings: List[str], turn: int, answer_key: str) -> str:
+    """Return the digest of everything a turn's judgment depends on.
+
+    For `content` this is the answers up to the turn, unchanged from earlier
+    versions so existing checkpoints stay valid; modes that judge the chain of
+    thought also cover the reasonings up to the turn.
+    """
+    if answer_key == DEFAULT_ANSWER_KEY:
+        return answers_digest(answers[:turn])
+    payload = {'answers': answers[:turn], 'reasonings': reasonings[:turn]}
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False).encode('utf-8')).hexdigest()
+
+
+def is_usable_judgment(record: Any, expected_digest: str, trust_legacy: bool) -> bool:
     """Return True if a checkpointed judgment is parsed and was made on the current answers.
 
-    A judgment records the digest of the answers up to its turn, so it is reused
-    only when those answers are unchanged. Records written before the digest was
+    A judgment records the digest of what it judged (see judged_digest()), so it
+    is reused only when that is unchanged. Records written before the digest was
     introduced are trusted only when `trust_legacy` is set, i.e. when the
     prompt's answers were not regenerated in this run.
     """
@@ -210,7 +233,7 @@ def is_usable_judgment(record: Any, answers: List[str], turn: int, trust_legacy:
     digest = record.get('answers_sha256')
     if digest is None:
         return trust_legacy
-    return digest == answers_digest(answers[:turn])
+    return digest == expected_digest
 
 
 def append_checkpoint(partial_path: Path, record: Dict[str, Any]) -> None:
@@ -225,9 +248,9 @@ async def generate_turns(client: Any, prompt: Dict[str, Any]) -> Dict[str, Any]:
 
     Each turn's reply is appended to the context before the next turn is sent,
     so multi-turn prompts become a real conversation instead of a flattened
-    block of user messages. Only the answer goes back into the context and to
-    the judge; the chain of thought of a reasoning model is split off and kept
-    in `generation`, per turn, for reference.
+    block of user messages. Only the final answer goes back into the context;
+    the chain of thought of a reasoning model is split off and kept in
+    `generation`, per turn, where `answer_key` can send it to the judge.
     """
     messages: List[Dict[str, str]] = []
     answers: List[str] = []
@@ -265,12 +288,14 @@ async def judge_one(
     history: List[Dict[str, str]],
     answers_sha256: str,
 ) -> Dict[str, Any]:
-    """Judge one turn's answer against its rubric, retrying on parse failures.
+    """Judge one turn against its rubric, retrying on parse failures.
 
-    The rubric's {question} placeholder receives only the current turn; earlier
-    turns are inserted as a history block right after the safety-category tag
-    (see src/rubric/render.py). The record keeps `answers_sha256`, the digest of
-    the answers up to this turn, so a resumed run reuses it only for the same answers.
+    `answer` is the text to judge (see compose_judged_text()). The rubric's
+    {question} placeholder receives only the current turn; earlier turns, with
+    their final answers, are inserted as a history block right after the
+    safety-category tag (see src/rubric/render.py). The record keeps
+    `answers_sha256`, the digest of what was judged, so a resumed run reuses it
+    only for the same input.
     """
     turn_prompt = {'messages': [{'role': 'user', 'content': question}],
                    'category': prompt['category'],
@@ -322,6 +347,12 @@ async def run(args: argparse.Namespace) -> None:
 
     judge_config = load_config(args.judge)
     model_config = None if args.answers else load_config(args.model or Path('configs/model.yaml'))
+    answer_key = args.answer_key or (model_config or {}).get('answer_key') or DEFAULT_ANSWER_KEY
+    if answer_key not in ANSWER_KEYS:
+        raise ValueError(f"Unsupported answer_key {answer_key!r}; choose one of {', '.join(ANSWER_KEYS)}")
+    if model_config is not None:
+        # The client uses it to accept turns whose only output is reasoning.
+        model_config['answer_key'] = answer_key
     if args.output is None:
         args.output = default_output(model_config, args.answers)
         print(f'[info] --output not given; writing to {args.output}', file=sys.stderr)
@@ -332,7 +363,8 @@ async def run(args: argparse.Namespace) -> None:
         'rubrics_sha256': file_sha256(rubrics_path),
         'judge': request_settings(judge_config),
         'answer_source': (
-            {'type': 'answers_file', 'sha256': file_sha256(args.answers)}
+            {'type': 'answers_file', 'sha256': file_sha256(args.answers),
+             'answer_key': None if answer_key == DEFAULT_ANSWER_KEY else answer_key}
             if args.answers else
             {'type': 'model', **request_settings(model_config)}
         ),
@@ -347,19 +379,47 @@ async def run(args: argparse.Namespace) -> None:
     answers_by_id: Dict[str, List[str]] = {}
     generation_by_id: Dict[str, List[Dict[str, Any]]] = {}
     if args.answers:
+        no_reasoning = []
         for record in read_jsonl(args.answers):
             answers_by_id[record['id']] = (
                 list(record['answers']) if record.get('answers') else [record['answer']]
             )
+            if 'reasonings' in record or 'reasoning' in record:
+                reasonings = (list(record['reasonings']) if 'reasonings' in record
+                              else [record['reasoning']])
+                generation_by_id[record['id']] = [
+                    {'reasoning': text or '', 'reasoning_source': 'answers_file'} for text in reasonings
+                ]
+            else:
+                no_reasoning.append(record['id'])
         uncovered = [p['id'] for p in prompts if p['id'] not in answers_by_id]
-        if uncovered:
-            raise ValueError(f'{len(uncovered)} prompts lack an answer, e.g. {uncovered[:3]}')
-        mismatched = [p['id'] for p in prompts if len(answers_by_id[p['id']]) != len(p['messages'])]
+        if uncovered and not args.allow_missing_answers:
+            raise ValueError(f'{len(uncovered)} prompts lack an answer, e.g. {uncovered[:3]}; '
+                             'pass --allow-missing-answers to count them as incomplete')
+        covered = [p for p in prompts if p['id'] in answers_by_id]
+        mismatched = [p['id'] for p in covered
+                      if len(answers_by_id[p['id']]) > len(p['messages'])
+                      or (len(answers_by_id[p['id']]) < len(p['messages']) and not args.allow_missing_answers)]
         if mismatched:
             raise ValueError(
                 f'{len(mismatched)} prompts have an answer count different from their turn count, '
                 f'e.g. {mismatched[:3]}; multi-turn prompts need "answers" with one entry per turn'
             )
+        if uncovered:
+            print(f'[warn] {len(uncovered)} prompts have no answer in {args.answers}; counted as incomplete',
+                  file=sys.stderr)
+        if answer_key != DEFAULT_ANSWER_KEY:
+            wanted = {p['id'] for p in covered}
+            lacking = [pid for pid in no_reasoning if pid in wanted]
+            if lacking:
+                raise ValueError(
+                    f'answer_key {answer_key} judges the chain of thought, but {len(lacking)} prompts in '
+                    f'{args.answers} have no "reasoning"/"reasonings", e.g. {lacking[:3]}')
+            uneven = [p['id'] for p in covered
+                      if len(generation_by_id[p['id']]) != len(answers_by_id[p['id']])]
+            if uneven:
+                raise ValueError(f'{len(uneven)} prompts have a reasoning count different from their '
+                                 f'answer count, e.g. {uneven[:3]}')
         answer_source = {'type': 'answers_file', 'path': str(args.answers)}
     else:
         answer_source = {'type': 'model', 'model': model_config['model']}
@@ -374,28 +434,46 @@ async def run(args: argparse.Namespace) -> None:
     scheduled: set = set()
     judge_bar = None
 
+    def reasonings_of(prompt_id: str) -> List[str]:
+        """Per-turn chain of thought of a prompt ('' where a turn has none)."""
+        return [(item or {}).get('reasoning') or '' for item in generation_by_id.get(prompt_id, [])]
+
     async def judge_and_collect(prompt: Dict[str, Any], turn: int) -> None:
         answers = answers_by_id[prompt['id']]
-        record = await judge_one(
-            judge, lock, partial_path, prompt, templates[prompt['id']], turn,
-            prompt['messages'][turn - 1]['content'], answers[turn - 1],
-            history_pairs(prompt, answers)[:turn - 1], answers_digest(answers[:turn]),
-        )
+        reasonings = reasonings_of(prompt['id'])
+        reasoning = reasonings[turn - 1] if turn <= len(reasonings) else ''
+        digest = judged_digest(answers, reasonings, turn, answer_key)
+        try:
+            judged_text = compose_judged_text(answers[turn - 1], reasoning, answer_key, prompt['language'])
+        except ValueError as error:
+            # Nothing to judge in this turn (e.g. no reasoning); record it as incomplete.
+            record = {'key': f"{prompt['id']}#{turn}", 'kind': 'judgment', 'turn': turn,
+                      'answers_sha256': digest, 'verdict': None, 'score': None, 'triggered_items': [],
+                      'final_summary': '', 'judge_output': None, 'error': str(error)}
+            async with lock:
+                append_checkpoint(partial_path, record)
+        else:
+            record = await judge_one(
+                judge, lock, partial_path, prompt, templates[prompt['id']], turn,
+                prompt['messages'][turn - 1]['content'], judged_text,
+                history_pairs(prompt, answers)[:turn - 1], digest,
+            )
         if record['error'] is None:
             judgments.setdefault(prompt['id'], []).append(record)
         judge_bar.update(1)
 
     def schedule_judging(prompt: Dict[str, Any]) -> None:
-        """Reuse the checkpointed judgments made on the current answers; queue the other answered turns."""
+        """Reuse the checkpointed judgments made on the current input; queue the other answered turns."""
         if prompt['id'] in scheduled:
             return
         scheduled.add(prompt['id'])
         answers = answers_by_id.get(prompt['id'], [])
+        reasonings = reasonings_of(prompt['id'])
         trust_legacy = prompt['id'] not in regenerated
         turns = []
         for turn in range(1, len(answers) + 1):
             record = checkpoint.get(f"{prompt['id']}#{turn}")
-            if is_usable_judgment(record, answers, turn, trust_legacy):
+            if is_usable_judgment(record, judged_digest(answers, reasonings, turn, answer_key), trust_legacy):
                 judgments.setdefault(prompt['id'], []).append(record)
             else:
                 turns.append(turn)
@@ -485,6 +563,7 @@ async def run(args: argparse.Namespace) -> None:
             'created_at': datetime.now().isoformat(timespec='seconds'),
             'judge': {'model': judge_config['model'], 'temperature': judge_config.get('temperature', 0)},
             'answer_source': answer_source,
+            'answer_key': answer_key,
             'config_fingerprint': fingerprint,
             'n_prompts': len(results),
             'n_turns_judged': sum(len(r['history']) for r in results),
