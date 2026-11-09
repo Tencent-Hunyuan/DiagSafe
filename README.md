@@ -228,9 +228,7 @@ the LLM-as-a-judge).
    | `content+reasoning_content` | Both, as `<reasoning>…</reasoning>` followed by `<final_answer>…</final_answer>` (`<思考过程>` / `<最终回答>` for Chinese prompts) |
 
    Earlier turns are always shown to the judge with their final answers only. Thinking itself is
-   switched on per model in `extra_body` (see `configs/model_reasoning_vllm.yaml`). Note that the
-   paper's human-agreement study covers final answers only; judgments of the chain of thought have
-   not been validated against human annotations, and usefulness scores are less meaningful there.
+   switched on per model in `extra_body` (see `configs/model_reasoning_vllm.yaml`).
 
    To judge an existing run in another mode without generating the answers again, export its
    answers and chains of thought, then pass them with `--answers`. Prompts whose generation failed

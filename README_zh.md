@@ -217,8 +217,7 @@ pip install -r requirements.txt
    | `content+reasoning_content` | 两者，格式为 `<思考过程>…</思考过程>` 后接 `<最终回答>…</最终回答>`（英文 prompt 为 `<reasoning>` / `<final_answer>`） |
 
    历史轮次交给 judge 时始终只包含最终回答。是否开启思考需在被测模型的 `extra_body` 中按模型设置
-   （见 `configs/model_reasoning_vllm.yaml`）。注意：论文的人工一致性验证只覆盖最终回答，
-   对思考过程的判定未经人工标注验证，此时的有用性分数参考意义也较弱。
+   （见 `configs/model_reasoning_vllm.yaml`）。
 
    如需用另一种模式重新评判已有结果而不重新生成回答，可先导出回答与思考过程，再通过 `--answers` 传入。
    生成失败的 prompt 不会被导出，加上 `--allow-missing-answers` 即可将其计为未完成：
