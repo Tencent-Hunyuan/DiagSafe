@@ -209,6 +209,14 @@ the LLM-as-a-judge).
    | `extra_body` | Server-specific fields added to the request body as is, e.g. vLLM's `chat_template_kwargs`, `top_k`, `repetition_penalty` | `{}` |
    | `extra_headers` | Additional HTTP headers, e.g. `X-Request-Id` | `{}` |
    | `answer_key` | Response field read as the answer: `content`, or `reasoning_content` for servers that return the reply there | `content` |
+   | `name` | Optional label used for the default output file name; set it to tell two settings of one model apart (e.g. `GLM-5.3-low`) | `model` |
+   | `endpoints` | Optional list of endpoints serving the same model, each with its own `base_url`, `model` and `concurrency`; requests go to the endpoint with the most free capacity and a failed request is retried on another one. Top-level fields are shared by all endpoints | none |
+
+   **Reasoning models.** A chain of thought returned in `reasoning_content`, or before a
+   `</think>` tag in `content`, is split off: only the final answer is judged and sent back as
+   context for the next turn. The chain of thought is kept per turn under `generation` in the
+   results file. If a model reaches `max_tokens` before it starts answering, that turn fails
+   instead of judging the reasoning as an answer, so give reasoning models a large `max_tokens`.
 
    For vLLM servers, use `configs/judge_vllm.yaml` and `configs/model_vllm.yaml`; their
    `extra_body` already sets `chat_template_kwargs: {enable_thinking: false}`.
@@ -220,9 +228,12 @@ the LLM-as-a-judge).
        --prompts  data/prompts \
        --rubrics  data/rubrics \
        --judge    configs/judge.yaml \
-       --model    configs/model.yaml \
-       --output   results/run-001.json
+       --model    configs/model.yaml
    ```
+
+   The results go to `results/<model>.json`, named after `name` (or `model`) in the model
+   config, so runs of different models do not overwrite each other. Pass `--output` to choose
+   another path.
 
    | Option | Effect |
    |---|---|
@@ -251,9 +262,9 @@ the LLM-as-a-judge).
 
    Use a new `--output` for each new model or configuration.
 
-3. **Inspect results.** `--output results/run-001.json` produces three files.
+3. **Inspect results.** `--output results/<model>.json` produces three files.
 
-   **`results/run-001.json`**: per-prompt answers and per-turn judgments; `meta` records the
+   **`results/<model>.json`**: per-prompt answers and per-turn judgments; `meta` records the
    configuration. For a multi-turn prompt, `history` keeps every turn in order, `judgments` holds one
    entry per turn, and `judge_output` is the judge's full output:
 
@@ -291,7 +302,7 @@ the LLM-as-a-judge).
    }
    ```
 
-   **`results/run-001.analysis.json`**: grouped statistics, also printed at the end of the run. Each
+   **`results/<model>.analysis.json`**: grouped statistics, also printed at the end of the run. Each
    group reports the sample count `n`, `unsafe_rate` and the mean usefulness score `mean_score`:
 
    ```json
@@ -309,7 +320,7 @@ the LLM-as-a-judge).
    }
    ```
 
-   **`results/run-001.partial.jsonl`**: the checkpoint. The first line records the configuration;
+   **`results/<model>.partial.jsonl`**: the checkpoint. The first line records the configuration;
    each following line is one answer record or one turn's judgment:
 
    ```jsonl
@@ -322,7 +333,7 @@ the LLM-as-a-judge).
    To recompute the statistics from an existing results file:
 
    ```bash
-   python scripts/analyze.py --results results/run-001.json
+   python scripts/analyze.py --results results/<model>.json
    ```
 
 ## Dataset Dashboard

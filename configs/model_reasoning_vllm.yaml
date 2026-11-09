@@ -1,0 +1,25 @@
+# Model under evaluation that always thinks (or whose thinking cannot be turned off),
+# served by vLLM. The chain of thought is split off and not judged (see README,
+# "Reasoning models"). Usage: python scripts/run_eval.py --model configs/model_reasoning_vllm.yaml ...
+
+base_url: http://<host>:<port>/v1   # server address
+api_key: EMPTY
+model: <model-name>                 # model name returned by /v1/models
+name: <model-name>-low              # optional: output becomes results/<name>.json
+temperature: 0.7
+top_p: 0.8
+max_tokens: 32768                   # large: thinking counts against it; a turn that ends inside the
+                                    # reasoning fails instead of being judged as an answer
+concurrency: 32
+max_retries: 5
+timeout: 3600                       # long reasoning can take minutes per request
+
+# The switch for thinking differs per model; check the model card. Examples:
+#   Qwen / DeepSeek:  chat_template_kwargs: {enable_thinking: false}  /  {thinking: false}
+#   GLM:              chat_template_kwargs: {reasoning_effort: low}      (low / high / max)
+#   Kimi:             reasoning_effort: none                             (top-level field)
+extra_body:
+  top_k: 20
+  repetition_penalty: 1.05
+  chat_template_kwargs:
+    reasoning_effort: low

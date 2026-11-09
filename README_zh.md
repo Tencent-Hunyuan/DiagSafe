@@ -199,6 +199,13 @@ pip install -r requirements.txt
    | `extra_body` | 服务端专有参数，原样放入请求体，如 vLLM 的 `chat_template_kwargs`、`top_k`、`repetition_penalty` | `{}` |
    | `extra_headers` | 额外的 HTTP 请求头，如 `X-Request-Id` | `{}` |
    | `answer_key` | 从响应的哪个字段读取回答：`content`；若服务端把回答放在 `reasoning_content` 中，则设为 `reasoning_content` | `content` |
+   | `name` | 可选，默认输出文件名使用的标签；同一模型的不同设置可借此区分（如 `GLM-5.3-low`） | `model` |
+   | `endpoints` | 可选，服务同一模型的多个地址，每项可单独设置 `base_url`、`model`、`concurrency`；请求发往空闲容量最大的地址，失败的请求会换一个地址重试。顶层字段由所有地址共用 | 无 |
+
+   **推理模型。** 通过 `reasoning_content` 返回的思维链，或 `content` 中 `</think>` 之前的部分，会被拆出：
+   只有最终回答会被判定，并作为下一轮的上下文回填。每一轮的思维链保存在结果文件的 `generation` 字段中。
+   若模型在开始回答之前就达到 `max_tokens`，该轮记为失败，不会把思考过程当作回答送判，
+   因此推理模型的 `max_tokens` 应设得足够大。
 
    vLLM 服务可直接使用 `configs/judge_vllm.yaml` 与 `configs/model_vllm.yaml`，
    其中 `extra_body` 已设置 `chat_template_kwargs: {enable_thinking: false}`。
@@ -210,9 +217,11 @@ pip install -r requirements.txt
        --prompts  data/prompts \
        --rubrics  data/rubrics \
        --judge    configs/judge.yaml \
-       --model    configs/model.yaml \
-       --output   results/run-001.json
+       --model    configs/model.yaml
    ```
+
+   结果默认写入 `results/<模型名>.json`，名称取自模型配置中的 `name`（未设置则取 `model`），
+   不同模型的结果不会互相覆盖。需要指定其他路径时再传 `--output`。
 
    | 参数 | 作用 |
    |---|---|
@@ -240,9 +249,9 @@ pip install -r requirements.txt
 
    评测新的模型或配置时，使用新的 `--output`。
 
-3. **查看结果。** 以 `--output results/run-001.json` 为例，会生成三个文件。
+3. **查看结果。** 以 `results/<模型名>.json` 为例，会生成三个文件。
 
-   **`results/run-001.json`**：逐条 prompt 的回答与逐轮判定，`meta` 记录本次配置。
+   **`results/<模型名>.json`**：逐条 prompt 的回答与逐轮判定，`meta` 记录本次配置。
    多轮 prompt 的 `history` 按顺序保存每一轮的问答，`judgments` 每轮一条，`judge_output` 为 judge 的完整输出：
 
    ```json
@@ -279,7 +288,7 @@ pip install -r requirements.txt
    }
    ```
 
-   **`results/run-001.analysis.json`**：分组统计，评测结束时同时打印。每组给出样本数 `n`、
+   **`results/<模型名>.analysis.json`**：分组统计，评测结束时同时打印。每组给出样本数 `n`、
    `unsafe_rate` 与平均有用性得分 `mean_score`：
 
    ```json
@@ -297,7 +306,7 @@ pip install -r requirements.txt
    }
    ```
 
-   **`results/run-001.partial.jsonl`**：checkpoint，首行记录配置，之后每行一条回答或一轮判定：
+   **`results/<模型名>.partial.jsonl`**：checkpoint，首行记录配置，之后每行一条回答或一轮判定：
 
    ```jsonl
    {"key": "__meta__", "kind": "meta", "fingerprint": {...}}
@@ -309,7 +318,7 @@ pip install -r requirements.txt
    对已有结果重新统计：
 
    ```bash
-   python scripts/analyze.py --results results/run-001.json
+   python scripts/analyze.py --results results/<模型名>.json
    ```
 
 ## 数据集可视化面板
