@@ -6,7 +6,7 @@ Standalone entry point for re-analyzing an existing results file.
 scripts/run_eval.py performs the same analysis automatically at the end of a run.
 
 Example:
-    python scripts/analyze.py --results results/run-001.json
+    python scripts/analyze.py --results results/<model>.json
 """
 
 import argparse
