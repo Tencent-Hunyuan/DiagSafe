@@ -107,3 +107,36 @@ def append_history(rendered: str, history: List[Dict[str, str]], language: str) 
     template before the answer is substituted.
     """
     return insert_history(rendered, history, language)
+
+
+_JUDGED_TEXT_TAGS = {
+    'zh': ('思考过程', '最终回答'),
+    'en': ('reasoning', 'final_answer'),
+}
+
+
+def compose_judged_text(answer: str, reasoning: str, answer_key: str, language: str) -> str:
+    """Build the text that fills the rubric's {answer} placeholder.
+
+    :param answer: The final answer of the turn.
+    :param reasoning: The chain of thought of the turn ('' if none).
+    :param answer_key: `content` judges the final answer, `reasoning_content`
+        the chain of thought, `content+reasoning_content` both. Both are then
+        wrapped in tags in the order the model produced them, e.g.
+        `<reasoning>...</reasoning>` followed by `<final_answer>...</final_answer>`
+        (`<思考过程>` / `<最终回答>` for Chinese prompts).
+    :param language: Prompt language (`en` or `zh`); selects the tag names.
+    :return: The text to judge.
+    :raises ValueError: `reasoning_content` is requested but the turn has no reasoning.
+    """
+    if answer_key == 'content':
+        return answer
+    if answer_key == 'reasoning_content':
+        if not reasoning:
+            raise ValueError('answer_key is reasoning_content but this turn has no reasoning')
+        return reasoning
+    if answer_key == 'content+reasoning_content':
+        reasoning_tag, answer_tag = _JUDGED_TEXT_TAGS.get(language, _JUDGED_TEXT_TAGS['en'])
+        return (f'<{reasoning_tag}>\n{reasoning}\n</{reasoning_tag}>\n'
+                f'<{answer_tag}>\n{answer}\n</{answer_tag}>')
+    raise ValueError(f'Unsupported answer_key {answer_key!r}')

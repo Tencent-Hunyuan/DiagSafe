@@ -17,14 +17,17 @@ from typing import Set
 
 from openai import BadRequestError
 
+from src.judge.client import CONTEXT_ERROR_MARKERS
 from src.judge.client import ChatClient
-
-CONTEXT_ERROR_MARKERS = ('context length', 'maximum context', 'maximum input length')
+from src.judge.client import ContextTooLong
+from src.judge.client import TruncatedReasoning
 
 
 def is_context_error(error: Optional[BaseException]) -> bool:
     """Return True if the error, or one it was raised from, reports a context-window overflow."""
     while error is not None:
+        if isinstance(error, ContextTooLong):
+            return True
         if isinstance(error, BadRequestError) and any(marker in str(error) for marker in CONTEXT_ERROR_MARKERS):
             return True
         error = error.__cause__
@@ -42,7 +45,7 @@ class _Endpoint:
 
 
 class EndpointPool:
-    """Client with the same `chat()` / `close()` interface as ChatClient.
+    """Client with the same `complete()` / `chat()` / `close()` interface as ChatClient.
 
     Config: top-level fields are shared by every endpoint; each entry of
     `endpoints` may override them (`base_url`, `model`, `concurrency`, ...).
@@ -81,7 +84,7 @@ class EndpointPool:
             endpoint.inflight -= 1
             self._condition.notify_all()
 
-    async def chat(self, messages: List[Dict[str, str]]) -> str:
+    async def complete(self, messages: List[Dict[str, str]]) -> Dict[str, Any]:
         """Send one request, retrying on another endpoint when it fails."""
         last_error: BaseException = RuntimeError('unreachable')
         too_long: Set[_Endpoint] = set()
@@ -89,7 +92,9 @@ class EndpointPool:
         for attempt in range(self.max_retries):
             endpoint = await self._acquire(too_long, avoid)
             try:
-                return await endpoint.client.chat(messages)
+                return await endpoint.client.complete(messages)
+            except TruncatedReasoning:
+                raise
             except Exception as error:  # noqa: BLE001 - retry on another endpoint
                 if is_context_error(error):
                     # A larger-context endpoint may still accept it.
@@ -105,6 +110,10 @@ class EndpointPool:
             if attempt + 1 < self.max_retries:
                 await asyncio.sleep(min(2 ** attempt + random.random(), 30))
         raise RuntimeError(f'Request failed after {self.max_retries} retries: {last_error}') from last_error
+
+    async def chat(self, messages: List[Dict[str, str]]) -> str:
+        """Send one request and return the final answer."""
+        return (await self.complete(messages))['answer']
 
     async def close(self) -> None:
         """Close every endpoint's HTTP client."""

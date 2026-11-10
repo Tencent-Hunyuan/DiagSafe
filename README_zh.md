@@ -149,6 +149,7 @@ DiagSafe/
 │   └── analyze.py           # 分组统计
 ├── scripts/
 │   ├── run_eval.py          # 端到端评测
+│   ├── export_answers.py    # 导出回答与思考过程，用于重新评判
 │   └── analyze.py           # 对已有结果文件重新分析
 ├── configs/                 # judge 与被测模型配置（OpenAI API、vLLM）
 ├── dashboard/               # 数据集可视化面板（本地服务与静态导出）
@@ -198,9 +199,35 @@ pip install -r requirements.txt
    | `top_p` | 核采样；`null` 表示不发送，由服务端决定 | `null` |
    | `extra_body` | 服务端专有参数，原样放入请求体，如 vLLM 的 `chat_template_kwargs`、`top_k`、`repetition_penalty` | `{}` |
    | `extra_headers` | 额外的 HTTP 请求头，如 `X-Request-Id` | `{}` |
-   | `answer_key` | 从响应的哪个字段读取回答：`content`；若服务端把回答放在 `reasoning_content` 中，则设为 `reasoning_content` | `content` |
+   | `answer_key` | 被测模型每轮交给 judge 评判的内容：`content`（最终回答）、`reasoning_content`（思考过程）或 `content+reasoning_content`（两者）；见下文“推理模型” | `content` |
    | `name` | 可选，默认输出文件名使用的标签；同一模型的不同设置可借此区分（如 `GLM-5.3-low`） | `model` |
    | `endpoints` | 可选，服务同一模型的多个地址，每项可单独设置 `base_url`、`model`、`concurrency`；请求发往空闲容量最大的地址，失败的请求会换一个地址重试。顶层字段由所有地址共用 | 无 |
+
+   **推理模型。** 通过 `reasoning_content` 返回的思维链，或 `content` 中 `</think>` 之前的部分，会与最终回答拆开：
+   只有最终回答会作为下一轮的上下文回填，每一轮的思维链保存在结果文件的 `generation` 字段中。
+   若模型在开始回答之前就达到 `max_tokens`，该轮记为失败，不会把思考过程当作回答送判，
+   因此推理模型的 `max_tokens` 应设得足够大。
+
+   `answer_key`（或优先级更高的命令行参数 `--answer-key`）决定 judge 评判的内容：
+
+   | `answer_key` | 填入 rubric `{answer}` 的文本 |
+   |---|---|
+   | `content`（默认） | 最终回答，与论文一致 |
+   | `reasoning_content` | 仅思考过程；没有思考过程的轮次记为未完成 |
+   | `content+reasoning_content` | 两者，格式为 `<思考过程>…</思考过程>` 后接 `<最终回答>…</最终回答>`（英文 prompt 为 `<reasoning>` / `<final_answer>`） |
+
+   历史轮次交给 judge 时始终只包含最终回答。是否开启思考需在被测模型的 `extra_body` 中按模型设置
+   （见 `configs/model_reasoning_vllm.yaml`）。
+
+   如需用另一种模式重新评判已有结果而不重新生成回答，可先导出回答与思考过程，再通过 `--answers` 传入。
+   生成失败的 prompt 不会被导出，加上 `--allow-missing-answers` 即可将其计为未完成：
+
+   ```bash
+   python scripts/export_answers.py --results results/<model>.json --output answers/<model>.jsonl
+   python scripts/run_eval.py --prompts data/prompts --rubrics data/rubrics --judge configs/judge.yaml \
+       --answers answers/<model>.jsonl --answer-key content+reasoning_content \
+       --output results/<model>-with-reasoning.json
+   ```
 
    vLLM 服务可直接使用 `configs/judge_vllm.yaml` 与 `configs/model_vllm.yaml`，
    其中 `extra_body` 已设置 `chat_template_kwargs: {enable_thinking: false}`。
@@ -221,7 +248,9 @@ pip install -r requirements.txt
    | 参数 | 作用 |
    |---|---|
    | `--model configs/model.yaml` | 在线调用被测模型生成回答 |
-   | `--answers answers.jsonl` | 评判已有回答，与 `--model` 二选一；单轮记录为 `{"id", "answer"}`，多轮为 `{"id", "answers": [...]}`（每轮一个） |
+   | `--answers answers.jsonl` | 评判已有回答，与 `--model` 二选一；单轮记录为 `{"id", "answer"}`，多轮为 `{"id", "answers": [...]}`（每轮一个）；可选的 `"reasoning"` / `"reasonings"` 为思考过程 |
+   | `--answer-key MODE` | judge 评判的内容：`content`、`reasoning_content` 或 `content+reasoning_content`；覆盖模型配置中的 `answer_key` |
+   | `--allow-missing-answers` | 配合 `--answers` 使用：缺少回答的 prompt 计为未完成，而不是报错停止 |
    | `--prompts` / `--rubrics` | 数据目录或文件 |
    | `--limit N` | 只评测前 N 条 |
    | `--pipeline` | 可选。每条 prompt 生成完回答后立即开始判定，生成与判定同时进行，总耗时更短；结果与默认方式完全一致 |
@@ -240,7 +269,7 @@ pip install -r requirements.txt
    | 调整 `--limit`（如 20 → 全量） | 续跑，只补跑新增条目 |
    | 修改 `base_url`、`api_key`、`concurrency`、`timeout`、`max_retries`、`extra_headers` | 续跑 |
    | 修改 judge 或被测模型的 `model`、`temperature`、`max_tokens`、`top_p`、`extra_body`、`answer_key` | 报错并列出变化的字段 |
-   | 修改 prompts、rubrics 或 `--answers` 文件内容 | 报错 |
+   | 修改 prompts、rubrics 或 `--answers` 文件内容，或 `--answer-key` | 报错 |
 
    评测新的模型或配置时，使用新的 `--output`。
 
