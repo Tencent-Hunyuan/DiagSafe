@@ -11,14 +11,18 @@ Example:
         --prompts  data/prompts \
         --rubrics  data/rubrics \
         --judge    configs/judge.yaml \
-        --model    configs/model.yaml \
-        --output   results/run-001.json
+        --model    configs/model.yaml
+
+The output defaults to results/<model-name>.json (see default_output()), so
+runs of different models never overwrite each other; pass --output to choose
+another path.
 """
 
 import argparse
 import asyncio
 import hashlib
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -34,8 +38,8 @@ from tqdm import tqdm
 from src.analyze import build_report
 from src.analyze import print_report
 from src.judge.client import DEFAULT_ANSWER_KEY
-from src.judge.client import ChatClient
 from src.judge.parse import parse_judgment
+from src.judge.pool import make_client
 from src.rubric.render import render_rubric
 from src.utils.io import load_config
 from src.utils.io import read_jsonl
@@ -56,7 +60,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--prompts', type=Path, required=True, help='Prompts file or its directory')
     parser.add_argument('--rubrics', type=Path, required=True, help='Rubrics file or its directory')
     parser.add_argument('--judge', type=Path, required=True, help='Judge config YAML')
-    parser.add_argument('--output', type=Path, required=True, help='Output results JSON path')
+    parser.add_argument('--output', type=Path, default=None,
+                        help='Output results JSON path (default: results/<model-name>.json, '
+                             'named after the evaluated model or the --answers file)')
     source = parser.add_mutually_exclusive_group()
     source.add_argument('--model', type=Path, default=None,
                         help='Model config YAML for online answer generation (default: configs/model.yaml)')
@@ -69,6 +75,24 @@ def parse_args() -> argparse.Namespace:
                              'after all answers are done; generation and judging then run '
                              'concurrently. Results are identical.')
     return parser.parse_args()
+
+
+def safe_name(text: str) -> str:
+    """Make a model name usable as a file name: keep letters, digits, `.`, `_` and `-`."""
+    cleaned = re.sub(r'[^A-Za-z0-9._-]+', '-', text.strip()).strip('-.')
+    return cleaned or 'model'
+
+
+def default_output(model_config: Dict[str, Any], answers_path: Path) -> Path:
+    """Name the results file after the evaluated model.
+
+    A `name` field in the model config takes precedence over `model`, which lets
+    two settings of one model (e.g. thinking on and off) get different files.
+    For --answers runs, which have no model config, the answers file's name is used.
+    """
+    if model_config is not None:
+        return Path('results') / f"{safe_name(str(model_config.get('name') or model_config['model']))}.json"
+    return Path('results') / f'{safe_name(answers_path.stem)}.json'
 
 
 def subset_of(prompt_id: str) -> str:
@@ -194,7 +218,7 @@ def append_checkpoint(partial_path: Path, record: Dict[str, Any]) -> None:
         stream.write(json.dumps(record, ensure_ascii=False) + '\n')
 
 
-async def generate_turns(client: ChatClient, prompt: Dict[str, Any]) -> Dict[str, Any]:
+async def generate_turns(client: Any, prompt: Dict[str, Any]) -> Dict[str, Any]:
     """Generate the target model's answer turn by turn, replaying the dialogue.
 
     Each turn's reply is appended to the context before the next turn is sent,
@@ -222,7 +246,7 @@ async def generate_turns(client: ChatClient, prompt: Dict[str, Any]) -> Dict[str
 
 
 async def judge_one(
-    judge: ChatClient,
+    judge: Any,
     lock: asyncio.Lock,
     partial_path: Path,
     prompt: Dict[str, Any],
@@ -286,6 +310,9 @@ async def run(args: argparse.Namespace) -> None:
 
     judge_config = load_config(args.judge)
     model_config = None if args.answers else load_config(args.model or Path('configs/model.yaml'))
+    if args.output is None:
+        args.output = default_output(model_config, args.answers)
+        print(f'[info] --output not given; writing to {args.output}', file=sys.stderr)
     # Everything that changes answers or judgments; --limit is excluded so a
     # smoke run can be extended to the full set with the same --output.
     fingerprint = {
@@ -327,7 +354,7 @@ async def run(args: argparse.Namespace) -> None:
             if record['kind'] == 'answer' and record.get('answers'):
                 answers_by_id[record['key']] = record['answers']
 
-    judge = ChatClient(judge_config)
+    judge = make_client(judge_config)
     judgments: Dict[str, List[Dict[str, Any]]] = {}
     judge_tasks: List[asyncio.Task] = []
     scheduled: set = set()
@@ -378,7 +405,7 @@ async def run(args: argparse.Namespace) -> None:
                 schedule_judging(prompt)
 
     if model_config is not None:
-        target = ChatClient(model_config)
+        target = make_client(model_config)
         if to_generate:
             by_id = {p['id']: p for p in to_generate}
             tasks = [asyncio.create_task(generate_turns(target, p)) for p in to_generate]

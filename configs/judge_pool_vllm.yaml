@@ -1,0 +1,21 @@
+# Judge served by several vLLM endpoints with the same weights. Requests go to the
+# endpoint with the most free capacity; a failed request is retried on another one,
+# and one that exceeds an endpoint's context window is rerouted to a larger one.
+# Usage: python scripts/run_eval.py --judge configs/judge_pool_vllm.yaml ...
+
+api_key: EMPTY
+model: <judge-model-name>           # name recorded in the results and the resume check
+temperature: 0
+max_tokens: 4096
+max_retries: 5
+timeout: 300
+extra_body:
+  chat_template_kwargs:
+    enable_thinking: false
+
+endpoints:
+  - base_url: http://<host-1>:<port>/v1
+    concurrency: 32                 # about as many requests as the server runs at once
+  - base_url: http://<host-2>:<port>/v1
+    model: <name-on-this-server>    # per-endpoint override, if the served name differs
+    concurrency: 32
